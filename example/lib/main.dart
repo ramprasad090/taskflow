@@ -75,6 +75,36 @@ void main() async {
     return TaskResult.success();
   });
 
+  // Chain example: validatePayment → processPayment → sendConfirmation
+  TaskFlow.registerHandler('validatePayment', (ctx) async {
+    print('🔐 Validating payment...');
+    await Future.delayed(Duration(seconds: 1));
+    return TaskResult.success(data: {
+      'validated': true,
+      'amount': ctx.input['amount'] ?? 0,
+    });
+  });
+
+  TaskFlow.registerHandler('sendConfirmation', (ctx) async {
+    print('📧 Sending confirmation email...');
+    await Future.delayed(Duration(seconds: 1));
+    return TaskResult.success(data: {
+      'email_sent': true,
+      'recipient': 'user@example.com',
+      'timestamp': DateTime.now().toString(),
+    });
+  });
+
+  // Schedule example: periodic sync
+  TaskFlow.registerHandler('periodicSync', (ctx) async {
+    print('🔄 Periodic sync running...');
+    await Future.delayed(Duration(seconds: 2));
+    return TaskResult.success(data: {
+      'synced_items': 42,
+      'last_sync': DateTime.now().toString(),
+    });
+  });
+
   await TaskFlow.initialize();
   runApp(const TaskFlowExampleApp());
 }
@@ -150,6 +180,27 @@ class _ExampleHomeState extends State<ExampleHome> {
                 description: 'Runs ASAP, high priority, no constraints',
                 buttonLabel: 'Process Payment (ASAP)',
                 onPressed: () => _enqueueExpedited(),
+              ),
+
+              const SizedBox(height: 24),
+              const Divider(),
+              const SizedBox(height: 16),
+
+              // ===== TASK CHAINING =====
+              _buildModeSection(
+                title: '⛓️ Task Chaining (Sequential)',
+                description: 'Run multiple tasks in sequence, pass data between them',
+                buttonLabel: 'Chain: Validate → Process → Send',
+                onPressed: () => _enqueueChain(),
+              ),
+              const SizedBox(height: 16),
+
+              // ===== PERIODIC SCHEDULING =====
+              _buildModeSection(
+                title: '⏰ Periodic Scheduling (15+ min)',
+                description: 'Run task on a schedule, survives app kill',
+                buttonLabel: 'Schedule Sync (every 30 min)',
+                onPressed: () => _enqueueSchedule(),
               ),
 
               const SizedBox(height: 24),
@@ -387,6 +438,30 @@ class _ExampleHomeState extends State<ExampleHome> {
     _logActivity('[EXPEDITED] Payment task queued: $id');
     setState(() => _executionId = id);
     _monitorTask(id);
+  }
+
+  void _enqueueChain() async {
+    _logActivity('[CHAIN] Starting sequential task chain...');
+    // Chain: validatePayment → processPayment → sendConfirmation
+    final id = await TaskFlow.chain('paymentChain')
+        .then('validatePayment')
+        .then('processPayment')
+        .then('sendConfirmation')
+        .enqueue(input: {'amount': 500.00});
+    _logActivity('[CHAIN] Chain enqueued: $id');
+    setState(() => _executionId = id);
+    _monitorTask(id);
+  }
+
+  void _enqueueSchedule() async {
+    _logActivity('[SCHEDULE] Setting up periodic sync...');
+    // Schedule task to run every 30 minutes (minimum 15 min)
+    await TaskFlow.schedule(
+      'periodicSync',
+      interval: Duration(minutes: 30),
+    );
+    _logActivity('[SCHEDULE] Periodic task scheduled');
+    setState(() => _executionId = 'periodic-sync');
   }
 
   void _monitorTask(String executionId) {
