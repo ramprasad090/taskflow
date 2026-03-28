@@ -1,6 +1,8 @@
 package dev.taskflow
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
@@ -69,35 +71,45 @@ class TaskFlowPlugin : FlutterPlugin, MethodCallHandler {
   }
 
   private fun simulateTaskExecution(executionId: String) {
+    val mainHandler = Handler(Looper.getMainLooper())
+
     Thread {
       try {
         // Emit Queued status
-        eventSink?.success(mapOf(
-          "executionId" to executionId,
-          "taskName" to "exampleTask",
-          "type" to "queued"
-        ))
+        mainHandler.post {
+          eventSink?.success(mapOf(
+            "executionId" to executionId,
+            "taskName" to "exampleTask",
+            "type" to "queued"
+          ))
+        }
 
         Thread.sleep(500)
 
         // Emit Running status with progress
         for (i in 1..5) {
+          Thread.sleep(400)
+          mainHandler.post {
+            eventSink?.success(mapOf(
+              "executionId" to executionId,
+              "taskName" to "exampleTask",
+              "type" to "running",
+              "progress" to (i * 0.2)
+            ))
+          }
+        }
+
+        Thread.sleep(500)
+
+        // Emit Succeeded status
+        mainHandler.post {
           eventSink?.success(mapOf(
             "executionId" to executionId,
             "taskName" to "exampleTask",
-            "type" to "running",
-            "progress" to (i * 0.2)
+            "type" to "succeeded",
+            "data" to mapOf("result" to "Task completed successfully!")
           ))
-          Thread.sleep(400)
         }
-
-        // Emit Succeeded status
-        eventSink?.success(mapOf(
-          "executionId" to executionId,
-          "taskName" to "exampleTask",
-          "type" to "succeeded",
-          "data" to mapOf("result" to "Task completed successfully!")
-        ))
       } catch (e: Exception) {
         e.printStackTrace()
       }

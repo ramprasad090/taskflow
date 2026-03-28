@@ -76,36 +76,41 @@ public class TaskFlowPlugin: NSObject, FlutterPlugin {
   }
 
   private func simulateTaskExecution(_ executionId: String) {
-    DispatchQueue.global().asyncAfter(deadline: .now() + 0.1) {
+    DispatchQueue.global().async {
       // Emit Queued status
-      TaskFlowPlugin.eventSink?([
-        "executionId": executionId,
-        "taskName": "exampleTask",
-        "type": "queued"
-      ])
+      DispatchQueue.main.async {
+        TaskFlowPlugin.eventSink?([
+          "executionId": executionId,
+          "taskName": "exampleTask",
+          "type": "queued"
+        ])
+      }
 
-      DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
-        // Emit Running status with progress
-        for i in 1...5 {
-          DispatchQueue.global().asyncAfter(deadline: .now() + Double(i - 1) * 0.4) {
-            TaskFlowPlugin.eventSink?([
-              "executionId": executionId,
-              "taskName": "exampleTask",
-              "type": "running",
-              "progress": Double(i) * 0.2
-            ])
-          }
-        }
+      Thread.sleep(forTimeInterval: 0.5)
 
-        // Emit Succeeded status
-        DispatchQueue.global().asyncAfter(deadline: .now() + 2.0) {
+      // Emit Running status with progress
+      for i in 1...5 {
+        Thread.sleep(forTimeInterval: 0.4)
+        DispatchQueue.main.async {
           TaskFlowPlugin.eventSink?([
             "executionId": executionId,
             "taskName": "exampleTask",
-            "type": "succeeded",
-            "data": ["result": "Task completed successfully!"]
+            "type": "running",
+            "progress": Double(i) * 0.2
           ])
         }
+      }
+
+      Thread.sleep(forTimeInterval: 0.5)
+
+      // Emit Succeeded status
+      DispatchQueue.main.async {
+        TaskFlowPlugin.eventSink?([
+          "executionId": executionId,
+          "taskName": "exampleTask",
+          "type": "succeeded",
+          "data": ["result": "Task completed successfully!"]
+        ])
       }
     }
   }
