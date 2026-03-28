@@ -102,245 +102,336 @@ class ExampleHome extends StatefulWidget {
 class _ExampleHomeState extends State<ExampleHome> {
   String? _executionId;
   TaskStatus? _currentStatus;
+  Map<String, dynamic>? _taskResult;
+  final List<String> _activityLog = [];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('TaskFlow: Ride-Hailing Example')),
-      body: Center(
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  '🚗 Ola/Uber Style Ride-Hailing',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Three execution modes in one app',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-                const SizedBox(height: 24),
-                // ===== MODE 1: Deferrable Task =====
-                const Text(
-                  '1️⃣ Deferrable Task (Sync History)',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                _buildButton(
-                  'End Ride → Sync History',
-                  () async {
-                    final id = await TaskFlow.enqueue(
-                      'syncRideHistory',
-                      input: {'rideId': 'ride_${DateTime.now().millisecondsSinceEpoch}'},
-                      constraints: TaskConstraints(
-                        network: NetworkConstraint.connected,
-                      ),
-                      retry: RetryPolicy.exponential(
-                        maxAttempts: 3,
-                        initialDelay: Duration(seconds: 5),
-                      ),
-                    );
-                    setState(() => _executionId = id);
-                    _monitorTask(id);
-                  },
-                ),
-                const SizedBox(height: 16),
-                // ===== MODE 2: Persistent Service =====
-                const Text(
-                  '2️⃣ Persistent Service (GPS Tracking)',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                _buildButton(
-                  'Start Live Tracking (Foreground)',
-                  () async {
-                    // Note: In real app, this would start a foreground service
-                    final id = await TaskFlow.enqueue(
-                      'updateLocation',
-                      input: {'lat': 12.9716, 'lng': 77.5946},
-                    );
-                    setState(() => _executionId = id);
-                    _monitorTask(id);
-                  },
-                ),
-                const SizedBox(height: 16),
-                // ===== MODE 3: Expedited Task =====
-                const Text(
-                  '3️⃣ Expedited Task (Payment)',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                _buildButton(
-                  'Process Payment (ASAP)',
-                  () async {
-                    final id = await TaskFlow.enqueue(
-                      'processPayment',
-                      priority: TaskPriority.high,
-                      input: {'amount': 250.50},
-                    );
-                    setState(() => _executionId = id);
-                    _monitorTask(id);
-                  },
-                ),
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 16),
-                // ===== Legacy Examples =====
-                const Text(
-                  'Legacy Examples',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                _buildButton(
-                  'Enqueue Task',
-                  () async {
-                    final id = await TaskFlow.enqueue(
-                      'exampleTask',
-                      constraints: TaskConstraints(
-                        network: NetworkConstraint.connected,
-                      ),
-                      retry: RetryPolicy.exponential(
-                        maxAttempts: 3,
-                        initialDelay: Duration(seconds: 5),
-                      ),
-                    );
-                    setState(() => _executionId = id);
-                    _monitorTask(id);
-                  },
-                ),
-                const SizedBox(height: 12),
-                _buildButton(
-                  'Enqueue Failing Task (Will Retry)',
-                  () async {
-                    final id = await TaskFlow.enqueue(
-                      'failingTask',
-                      retry: RetryPolicy.linear(
-                        maxAttempts: 2,
-                        delay: Duration(seconds: 2),
-                      ),
-                    );
-                    setState(() => _executionId = id);
-                    _monitorTask(id);
-                  },
-                ),
-                const SizedBox(height: 12),
-                _buildButton(
-                  'Enqueue Task with Input',
-                  () async {
-                    final id = await TaskFlow.enqueue(
-                      'delayedTask',
-                      input: {'seconds': 5},
-                    );
-                    setState(() => _executionId = id);
-                    _monitorTask(id);
-                  },
-                ),
-                const SizedBox(height: 24),
-                if (_executionId != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Execution ID: $_executionId',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        const SizedBox(height: 8),
-                        if (_currentStatus != null)
-                          Text(
-                            'Status: ${_statusString(_currentStatus!)}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: _statusColor(_currentStatus!),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '🚗 Ola/Uber Style Ride-Hailing',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Three execution modes in one app',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+
+              // ===== MODE 1: Deferrable Task =====
+              _buildModeSection(
+                title: '1️⃣ Deferrable Task (Sync History)',
+                description: 'Waits for network, retries on failure',
+                buttonLabel: 'End Ride → Sync History',
+                onPressed: () => _enqueueDeferrable(),
+              ),
+              const SizedBox(height: 16),
+
+              // ===== MODE 2: Persistent Service =====
+              _buildModeSection(
+                title: '2️⃣ Persistent Service (GPS Tracking)',
+                description: 'Foreground service, always-on, requires notification',
+                buttonLabel: 'Start Live Tracking',
+                onPressed: () => _enqueuePersistent(),
+              ),
+              const SizedBox(height: 16),
+
+              // ===== MODE 3: Expedited Task =====
+              _buildModeSection(
+                title: '3️⃣ Expedited Task (Payment)',
+                description: 'Runs ASAP, high priority, no constraints',
+                buttonLabel: 'Process Payment (ASAP)',
+                onPressed: () => _enqueueExpedited(),
+              ),
+
+              const SizedBox(height: 24),
+              const Divider(),
+              const SizedBox(height: 16),
+
+              // ===== RESULTS PANEL =====
+              if (_executionId != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    border: Border.all(color: Colors.blue),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Task Status & Results',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          Chip(
+                            label: Text(_statusString(_currentStatus)),
+                            backgroundColor: _statusColor(_currentStatus).withValues(alpha: 0.3),
+                            labelStyle: TextStyle(
+                              color: _statusColor(_currentStatus),
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        if (_currentStatus is TaskRunning)
-                          Column(
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'ID: $_executionId',
+                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Progress bar
+                      if (_currentStatus is TaskRunning)
+                        Column(
+                          children: [
+                            LinearProgressIndicator(
+                              value: (_currentStatus as TaskRunning).progress,
+                              minHeight: 8,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Progress: ${((_currentStatus as TaskRunning).progress * 100).toStringAsFixed(0)}%',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                        ),
+
+                      // Task result display
+                      if (_taskResult != null)
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.green, width: 2),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              const Text(
+                                '✅ Task Result:',
+                                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                              ),
                               const SizedBox(height: 8),
-                              LinearProgressIndicator(
-                                value: (_currentStatus as TaskRunning).progress,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Progress: ${((_currentStatus as TaskRunning).progress * 100).toStringAsFixed(0)}%',
-                                style: const TextStyle(fontSize: 12),
-                              ),
+                              ..._taskResult!.entries.map((e) => Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${e.key}: ',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        '${e.value}',
+                                        style: const TextStyle(fontSize: 12, color: Colors.green),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )),
                             ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // ===== ACTIVITY LOG =====
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Activity Log',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        if (_activityLog.isNotEmpty)
+                          TextButton(
+                            onPressed: () => setState(() => _activityLog.clear()),
+                            child: const Text('Clear', style: TextStyle(fontSize: 12)),
                           ),
                       ],
                     ),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 16),
-                const Text(
-                  'Features Demonstrated:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                    const Divider(),
+                    if (_activityLog.isEmpty)
+                      const Text(
+                        'No activity yet. Click a button to start!',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      )
+                    else
+                      ...List.generate(
+                        _activityLog.length,
+                        (i) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            _activityLog[i],
+                            style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                          ),
+                        ),
+                      ).reversed,
+                  ],
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  '✅ Three execution modes (Deferrable, Persistent, Expedited)\n'
-                  '✅ Monitor task progress in real-time\n'
-                  '✅ Automatic retry with exponential/linear backoff\n'
-                  '✅ Pass input data to tasks\n'
-                  '✅ Report progress from handlers\n'
-                  '✅ Track task status via streams\n'
-                  '✅ Task constraints (network, battery, charging)\n'
-                  '✅ Task priorities (high, normal, low)\n',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ],
-            ),
+              ),
+
+              const SizedBox(height: 24),
+              const Divider(),
+              const SizedBox(height: 16),
+
+              // ===== FEATURES =====
+              const Text(
+                'Features Demonstrated:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '✅ Three execution modes (Deferrable, Persistent, Expedited)\n'
+                '✅ Monitor task progress in real-time\n'
+                '✅ Automatic retry with exponential/linear backoff\n'
+                '✅ Pass input data to tasks\n'
+                '✅ Report progress from handlers\n'
+                '✅ Track task status via streams\n'
+                '✅ Task constraints (network, battery, charging)\n'
+                '✅ Task priorities (high, normal, low)\n'
+                '✅ Display task results & activity log\n',
+                style: TextStyle(fontSize: 12),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  void _monitorTask(String executionId) {
-    TaskFlow.monitorExecution(executionId).listen((status) {
-      setState(() => _currentStatus = status);
-    });
-  }
-
-  Widget _buildButton(String label, VoidCallback onPressed) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Text(label),
+  Widget _buildModeSection({
+    required String title,
+    required String description,
+    required String buttonLabel,
+    required VoidCallback onPressed,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        Text(description, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: onPressed,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(buttonLabel),
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  String _statusString(TaskStatus status) {
+  void _enqueueDeferrable() async {
+    final id = await TaskFlow.enqueue(
+      'syncRideHistory',
+      input: {'rideId': 'ride_${DateTime.now().millisecondsSinceEpoch}'},
+      constraints: TaskConstraints(network: NetworkConstraint.connected),
+      retry: RetryPolicy.exponential(maxAttempts: 3, initialDelay: Duration(seconds: 5)),
+    );
+    _logActivity('[DEFERRABLE] Task enqueued: $id');
+    setState(() => _executionId = id);
+    _monitorTask(id);
+  }
+
+  void _enqueuePersistent() async {
+    final id = await TaskFlow.enqueue(
+      'updateLocation',
+      input: {'lat': 12.9716, 'lng': 77.5946},
+    );
+    _logActivity('[PERSISTENT] Service started: $id');
+    setState(() => _executionId = id);
+    _monitorTask(id);
+  }
+
+  void _enqueueExpedited() async {
+    final id = await TaskFlow.enqueue(
+      'processPayment',
+      priority: TaskPriority.high,
+      input: {'amount': 250.50},
+    );
+    _logActivity('[EXPEDITED] Payment task queued: $id');
+    setState(() => _executionId = id);
+    _monitorTask(id);
+  }
+
+  void _monitorTask(String executionId) {
+    TaskFlow.monitorExecution(executionId).listen((status) {
+      setState(() {
+        _currentStatus = status;
+
+        if (status is TaskSucceeded) {
+          _taskResult = status.data;
+          _logActivity('✅ Task succeeded');
+        } else if (status is TaskRunning) {
+          _logActivity('⏳ Running (${(status.progress * 100).toStringAsFixed(0)}%)');
+        } else if (status is TaskQueued) {
+          _logActivity('📋 Task queued');
+        } else if (status is TaskFailed) {
+          _logActivity('❌ Task failed: ${status.error}');
+        } else if (status is TaskRetrying) {
+          _logActivity('🔄 Retrying (attempt ${status.attempt})...');
+        }
+      });
+    });
+  }
+
+  void _logActivity(String message) {
+    final timestamp = DateTime.now().toString().split('.')[0].split(' ')[1];
+    setState(() {
+      _activityLog.add('[$timestamp] $message');
+      if (_activityLog.length > 20) _activityLog.removeAt(0);
+    });
+  }
+
+  String _statusString(TaskStatus? status) {
+    if (status == null) return 'Idle';
     return switch (status) {
       TaskQueued() => 'Queued',
       TaskRunning() => 'Running',
-      TaskSucceeded() => 'Succeeded',
-      TaskFailed() => 'Failed',
-      TaskRetrying() => 'Retrying',
+      TaskSucceeded() => 'Succeeded ✅',
+      TaskFailed() => 'Failed ❌',
+      TaskRetrying() => 'Retrying 🔄',
       TaskCancelled() => 'Cancelled',
     };
   }
 
-  Color _statusColor(TaskStatus status) {
+  Color _statusColor(TaskStatus? status) {
+    if (status == null) return Colors.grey;
     return switch (status) {
       TaskQueued() => Colors.blue,
       TaskRunning() => Colors.orange,
