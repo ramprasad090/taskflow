@@ -19,6 +19,13 @@ sealed class TaskStatus {
     final executionId = map['executionId'] as String? ?? '';
     final taskName = map['taskName'] as String? ?? '';
 
+    Map<String, dynamic>? _castData(dynamic data) {
+      if (data is Map) {
+        return Map<String, dynamic>.from(data.cast<String, dynamic>());
+      }
+      return null;
+    }
+
     return switch (type) {
       'queued' => TaskQueued(
           executionId: executionId,
@@ -32,7 +39,7 @@ sealed class TaskStatus {
       'succeeded' => TaskSucceeded(
           executionId: executionId,
           taskName: taskName,
-          data: map['data'] as Map<String, dynamic>?,
+          data: _castData(map['data']),
         ),
       'failed' => TaskFailed(
           executionId: executionId,
