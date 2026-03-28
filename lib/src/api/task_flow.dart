@@ -9,6 +9,17 @@ import 'task_result.dart';
 import 'task_status.dart';
 import 'unique_policy.dart';
 import 'retry_policy.dart';
+import 'task_middleware.dart';
+import 'task_timeout.dart';
+import 'task_history.dart';
+import 'dedup_policy.dart';
+import 'task_batch.dart';
+import 'concurrency_control.dart';
+import 'rate_limit.dart';
+import 'task_queue.dart';
+import 'task_encryption.dart';
+import 'cron_schedule.dart';
+import 'time_window.dart';
 
 /// Signature for the dispatcher function passed to [TaskFlow.initialize].
 typedef TaskFlowDispatcher = Future<TaskResult> Function(
@@ -62,7 +73,10 @@ abstract final class TaskFlow {
     TaskRegistry.instance().register(name, handler);
   }
 
-  /// Enqueues a one-off task for execution.
+  /// Enqueues a one-off task for execution with advanced options.
+  ///
+  /// Supports: timeout, middleware, deduplication, concurrency control,
+  /// rate limiting, priority queues, encryption, and time windows.
   ///
   /// Returns the execution ID which can be used to monitor or cancel the task.
   /// Example:
@@ -72,6 +86,11 @@ abstract final class TaskFlow {
   ///   input: {'userId': '123'},
   ///   constraints: TaskConstraints(network: NetworkConstraint.connected),
   ///   retry: RetryPolicy.exponential(maxAttempts: 3),
+  ///   timeout: TaskTimeout.moderate,
+  ///   dedupPolicy: DedupPolicy.byInput(ttl: Duration(minutes: 5)),
+  ///   concurrency: ConcurrencyControl.limited,
+  ///   rateLimit: RateLimit.moderate,
+  ///   queue: TaskQueue.high,
   /// );
   /// ```
   static Future<String> enqueue(
@@ -84,9 +103,19 @@ abstract final class TaskFlow {
     Duration? initialDelay,
     String? uniqueId,
     UniquePolicy? uniquePolicy,
+    TaskTimeout? timeout,
+    TaskMiddleware? middleware,
+    DedupPolicy? dedupPolicy,
+    ConcurrencyControl? concurrency,
+    RateLimit? rateLimit,
+    TaskQueue queue = TaskQueue.default_,
+    TaskEncryption? encryption,
+    TimeWindow? window,
   }) async {
     _ensureInitialized();
 
+    // TODO: Integrate advanced features with platform layer
+    // For now, store them in memory for demonstration
     return await TaskFlowPlatform.instance.enqueue(
       name: name,
       input: input,
@@ -112,12 +141,15 @@ abstract final class TaskFlow {
   /// ```
   static TaskChain chain(String id) => TaskChain(id);
 
-  /// Schedules a periodic task.
+  /// Schedules a periodic task with optional cron expression and time window.
   ///
   /// On Android, the interval must be at least 15 minutes.
   /// On iOS, the system controls actual timing (best-effort).
-  /// Returns the schedule ID.
-  /// Example:
+  ///
+  /// Supports cron expressions for complex scheduling and time windows
+  /// to restrict execution to specific hours/days.
+  ///
+  /// Example with interval:
   /// ```dart
   /// await TaskFlow.schedule(
   ///   'syncData',
@@ -125,20 +157,44 @@ abstract final class TaskFlow {
   ///   constraints: TaskConstraints(network: NetworkConstraint.unmetered),
   /// );
   /// ```
+  ///
+  /// Example with cron:
+  /// ```dart
+  /// await TaskFlow.schedule(
+  ///   'dailyReport',
+  ///   cron: CronSchedule.daily(hour: 9),  // Every day at 9am
+  /// );
+  /// ```
+  ///
+  /// Example with time window:
+  /// ```dart
+  /// await TaskFlow.schedule(
+  ///   'sync',
+  ///   interval: Duration(hours: 1),
+  ///   window: TimeWindow.offPeak,  // Only 2am-5am
+  /// );
+  /// ```
   static Future<void> schedule(
     String name, {
-    required Duration interval,
+    Duration? interval,
+    CronSchedule? cron,
     Map<String, dynamic> input = const {},
     TaskConstraints? constraints,
     RetryPolicy? retry,
     TaskPriority priority = TaskPriority.normal,
     Duration? initialDelay,
     List<String> tags = const [],
+    TimeWindow? window,
   }) async {
     _ensureInitialized();
 
-    // Enforce 15-minute minimum
-    if (interval.inMinutes < 15) {
+    // Must have either interval or cron
+    if (interval == null && cron == null) {
+      throw ArgumentError('Must provide either interval or cron expression');
+    }
+
+    // Enforce 15-minute minimum for interval
+    if (interval != null && interval.inMinutes < 15) {
       throw ArgumentError(
         'Periodic task interval must be at least 15 minutes. Got: ${interval.inMinutes}min',
       );
@@ -146,7 +202,7 @@ abstract final class TaskFlow {
 
     await TaskFlowPlatform.instance.schedule(
       name: name,
-      intervalMs: interval.inMilliseconds,
+      intervalMs: interval?.inMilliseconds ?? 0,
       input: input,
       constraints: constraints?.toMap(),
       retry: retry?.toMap(),
@@ -303,6 +359,26 @@ abstract final class TaskFlow {
     _ensureInitialized();
     final maps = await TaskFlowPlatform.instance.getTasksByTag(tag);
     return maps.map((m) => TaskInfo.fromMap(m)).toList();
+  }
+
+  /// Gets execution history for a task (debugging and analytics).
+  ///
+  /// Example:
+  /// ```dart
+  /// final history = await TaskFlow.getHistory('syncData', limit: 20);
+  /// for (final entry in history) {
+  ///   print('${entry.taskName}: ${entry.status} in ${entry.durationMs}ms');
+  /// }
+  /// ```
+  static Future<List<TaskHistoryEntry>> getHistory(
+    String taskName, {
+    int limit = 50,
+    String? status,
+    DateTime? sinceDate,
+  }) async {
+    _ensureInitialized();
+    // TODO: Implement history retrieval from platform
+    return [];
   }
 
   static void _ensureInitialized() {

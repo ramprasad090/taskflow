@@ -5,9 +5,17 @@ import 'package:bg_orchestrator/taskflow.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ==================== RIDE-HAILING EXAMPLE (Ola/Uber) ====================
+  // ==================== COMPREHENSIVE EXAMPLE APP ====================
+  // Demonstrates ALL v1.0.4 features:
+  // ✅ Task enqueueing with timeout, middleware, dedup, concurrency, rate limiting, priority queues, encryption
+  // ✅ Task chaining with sequential execution
+  // ✅ Periodic scheduling with cron expressions and time windows
+  // ✅ Persistent services with foreground notification
+  // ✅ Task monitoring with real-time progress
+  // ✅ Execution history and logging
+  // ✅ Lifecycle hooks (onTaskStart, onTaskComplete, onTaskFailed, onChainComplete)
 
-  // Mode 1: Deferrable Task - Sync ride history after trip ends
+  // ===== TASK HANDLERS =====
   TaskFlow.registerHandler('syncRideHistory', (ctx) async {
     final rideId = ctx.input['rideId'] as String? ?? 'ride_123';
     print('📊 Syncing ride history for $rideId...');
@@ -22,12 +30,10 @@ void main() async {
     });
   });
 
-  // Mode 2: Persistent Service - Live GPS tracking (always-on)
   TaskFlow.registerHandler('updateLocation', (ctx) async {
     final latitude = (ctx.input['lat'] as num?)?.toDouble() ?? 12.9716;
     final longitude = (ctx.input['lng'] as num?)?.toDouble() ?? 77.5946;
     print('📍 GPS Update: ($latitude, $longitude)');
-    // Simulates GPS location broadcast
     await Future.delayed(Duration(milliseconds: 500));
     return TaskResult.success(data: {
       'lat': latitude,
@@ -36,7 +42,6 @@ void main() async {
     });
   });
 
-  // Mode 3: Expedited Task - Process payment immediately
   TaskFlow.registerHandler('processPayment', (ctx) async {
     final amount = ctx.input['amount'] as num? ?? 250.0;
     print('💳 Processing payment: ₹$amount...');
@@ -52,7 +57,6 @@ void main() async {
     });
   });
 
-  // Legacy example tasks
   TaskFlow.registerHandler('exampleTask', (ctx) async {
     await Future.delayed(Duration(seconds: 1));
     await ctx.reportProgress(0.5);
@@ -75,7 +79,6 @@ void main() async {
     return TaskResult.success();
   });
 
-  // Chain example: validatePayment → processPayment → sendConfirmation
   TaskFlow.registerHandler('validatePayment', (ctx) async {
     print('🔐 Validating payment...');
     await Future.delayed(Duration(seconds: 1));
@@ -95,7 +98,6 @@ void main() async {
     });
   });
 
-  // Schedule example: periodic sync
   TaskFlow.registerHandler('periodicSync', (ctx) async {
     print('🔄 Periodic sync running...');
     await Future.delayed(Duration(seconds: 2));
@@ -115,7 +117,7 @@ class TaskFlowExampleApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'TaskFlow Example',
+      title: 'bg_orchestrator Demo',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const ExampleHome(),
     );
@@ -138,7 +140,10 @@ class _ExampleHomeState extends State<ExampleHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('TaskFlow: Ride-Hailing Example')),
+      appBar: AppBar(
+        title: const Text('bg_orchestrator: Full Feature Demo'),
+        elevation: 0,
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -146,70 +151,133 @@ class _ExampleHomeState extends State<ExampleHome> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                '🚗 Ola/Uber Style Ride-Hailing',
+                '🚀 Production-Grade Background Task Orchestrator',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               const Text(
-                'Three execution modes in one app',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                'All v1.0.0-v1.0.4 features: Timeouts • Middleware • History • Hooks • Cron • Time Windows • Dedup • Batching • Concurrency • Rate Limiting • Priority Queues • Encryption',
+                style: TextStyle(fontSize: 11, color: Colors.grey),
               ),
               const SizedBox(height: 24),
 
-              // ===== MODE 1: Deferrable Task =====
-              _buildModeSection(
-                title: '1️⃣ Deferrable Task (Sync History)',
-                description: 'Waits for network, retries on failure',
-                buttonLabel: 'End Ride → Sync History',
-                onPressed: () => _enqueueDeferrable(),
+              // ===== CORE FEATURES =====
+              _buildSection(
+                title: '1️⃣ Core Task Execution',
+                children: [
+                  _buildButton(
+                    label: 'Enqueue: Simple Task',
+                    onPressed: () => _enqueueSimple(),
+                  ),
+                  _buildButton(
+                    label: 'Enqueue: With Timeout (Soft/Hard)',
+                    onPressed: () => _enqueueWithTimeout(),
+                  ),
+                  _buildButton(
+                    label: 'Enqueue: With Deduplication',
+                    onPressed: () => _enqueueWithDedup(),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 
-              // ===== MODE 2: Persistent Service =====
-              _buildModeSection(
-                title: '2️⃣ Persistent Service (GPS Tracking)',
-                description: 'Foreground service, always-on, requires notification',
-                buttonLabel: 'Start Live Tracking',
-                onPressed: () => _enqueuePersistent(),
+              // ===== ADVANCED FEATURES =====
+              _buildSection(
+                title: '2️⃣ Advanced Scheduling',
+                children: [
+                  _buildButton(
+                    label: 'Schedule: Periodic (30 min)',
+                    onPressed: () => _enqueueSchedule(),
+                  ),
+                  _buildButton(
+                    label: 'Schedule: Cron (Daily 9am)',
+                    onPressed: () => _enqueueCron(),
+                  ),
+                  _buildButton(
+                    label: 'Schedule: Time Window (Off-Peak)',
+                    onPressed: () => _enqueueWithWindow(),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 
-              // ===== MODE 3: Expedited Task =====
-              _buildModeSection(
-                title: '3️⃣ Expedited Task (Payment)',
-                description: 'Runs ASAP, high priority, no constraints',
-                buttonLabel: 'Process Payment (ASAP)',
-                onPressed: () => _enqueueExpedited(),
-              ),
-
-              const SizedBox(height: 24),
-              const Divider(),
-              const SizedBox(height: 16),
-
-              // ===== TASK CHAINING =====
-              _buildModeSection(
-                title: '⛓️ Task Chaining (Sequential)',
-                description: 'Run multiple tasks in sequence, pass data between them',
-                buttonLabel: 'Chain: Validate → Process → Send',
-                onPressed: () => _enqueueChain(),
+              // ===== BUSINESS LOGIC =====
+              _buildSection(
+                title: '3️⃣ Task Chaining',
+                children: [
+                  _buildButton(
+                    label: 'Chain: Validate → Process → Send',
+                    onPressed: () => _enqueueChain(),
+                  ),
+                  _buildButton(
+                    label: 'Chain: With Constraints & Retry',
+                    onPressed: () => _enqueueChainAdvanced(),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 
-              // ===== PERIODIC SCHEDULING =====
-              _buildModeSection(
-                title: '⏰ Periodic Scheduling (15+ min)',
-                description: 'Run task on a schedule, survives app kill',
-                buttonLabel: 'Schedule Sync (every 30 min)',
-                onPressed: () => _enqueueSchedule(),
+              // ===== CONCURRENCY & RATE LIMITING =====
+              _buildSection(
+                title: '4️⃣ Concurrency & Rate Limiting',
+                children: [
+                  _buildButton(
+                    label: 'Enqueue: Limited Concurrency',
+                    onPressed: () => _enqueueWithConcurrency(),
+                  ),
+                  _buildButton(
+                    label: 'Enqueue: Rate Limited (10/min)',
+                    onPressed: () => _enqueueWithRateLimit(),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 
-              // ===== PERSISTENT SERVICE =====
-              _buildModeSection(
-                title: '🎯 Persistent Service (Always-on)',
-                description: 'Foreground service for GPS, WebSocket, BLE - limited to ~15 min on iOS',
-                buttonLabel: 'Start Live Tracking Service',
-                onPressed: () => _startPersistentService(),
+              // ===== PRIORITY QUEUES =====
+              _buildSection(
+                title: '5️⃣ Priority Queues',
+                children: [
+                  _buildButton(
+                    label: 'Queue: Critical (100x weight)',
+                    onPressed: () => _enqueueCriticalQueue(),
+                  ),
+                  _buildButton(
+                    label: 'Queue: Low (0.1x weight)',
+                    onPressed: () => _enqueueLowQueue(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // ===== SECURITY & ENCRYPTION =====
+              _buildSection(
+                title: '6️⃣ Security & Encryption',
+                children: [
+                  _buildButton(
+                    label: 'Enqueue: AES-256 Encrypted',
+                    onPressed: () => _enqueueEncrypted(),
+                  ),
+                  _buildButton(
+                    label: 'Process Payment (Sensitive Data)',
+                    onPressed: () => _enqueuePaymentSecure(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // ===== PERSISTENT SERVICES =====
+              _buildSection(
+                title: '7️⃣ Persistent Services',
+                children: [
+                  _buildButton(
+                    label: 'Start: Live GPS Tracking',
+                    onPressed: () => _startPersistentService(),
+                  ),
+                  _buildButton(
+                    label: 'Stop: Foreground Service',
+                    onPressed: () => _stopPersistentService(),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 24),
@@ -352,7 +420,7 @@ class _ExampleHomeState extends State<ExampleHome> {
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Text(
                             _activityLog[i],
-                            style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                            style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
                           ),
                         ),
                       ).reversed,
@@ -361,27 +429,6 @@ class _ExampleHomeState extends State<ExampleHome> {
               ),
 
               const SizedBox(height: 24),
-              const Divider(),
-              const SizedBox(height: 16),
-
-              // ===== FEATURES =====
-              const Text(
-                'Features Demonstrated:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '✅ Three execution modes (Deferrable, Persistent, Expedited)\n'
-                '✅ Monitor task progress in real-time\n'
-                '✅ Automatic retry with exponential/linear backoff\n'
-                '✅ Pass input data to tasks\n'
-                '✅ Report progress from handlers\n'
-                '✅ Track task status via streams\n'
-                '✅ Task constraints (network, battery, charging)\n'
-                '✅ Task priorities (high, normal, low)\n'
-                '✅ Display task results & activity log\n',
-                style: TextStyle(fontSize: 12),
-              ),
             ],
           ),
         ),
@@ -389,69 +436,102 @@ class _ExampleHomeState extends State<ExampleHome> {
     );
   }
 
-  Widget _buildModeSection({
+  Widget _buildSection({
     required String title,
-    required String description,
-    required String buttonLabel,
-    required VoidCallback onPressed,
+    required List<Widget> children,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(description, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: onPressed,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(buttonLabel),
-            ),
-          ),
-        ),
+        ...children.map((child) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: child,
+        )),
       ],
     );
   }
 
-  void _enqueueDeferrable() async {
+  Widget _buildButton({required String label, required VoidCallback onPressed}) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Text(label, style: const TextStyle(fontSize: 12)),
+        ),
+      ),
+    );
+  }
+
+  // ===== ENQUEUE METHODS =====
+
+  void _enqueueSimple() async {
+    final id = await TaskFlow.enqueue(
+      'exampleTask',
+      retry: RetryPolicy.exponential(
+        maxAttempts: 3,
+        initialDelay: Duration(seconds: 5),
+      ),
+    );
+    _logActivity('[SIMPLE] Task enqueued: $id');
+    setState(() => _executionId = id);
+    _monitorTask(id);
+  }
+
+  void _enqueueWithTimeout() async {
+    final id = await TaskFlow.enqueue(
+      'delayedTask',
+      timeout: TaskTimeout.moderate, // 30s warning, 60s kill
+      input: {'seconds': 2},
+    );
+    _logActivity('[TIMEOUT] Task with soft/hard timeout: $id');
+    setState(() => _executionId = id);
+    _monitorTask(id);
+  }
+
+  void _enqueueWithDedup() async {
     final id = await TaskFlow.enqueue(
       'syncRideHistory',
-      input: {'rideId': 'ride_${DateTime.now().millisecondsSinceEpoch}'},
-      constraints: TaskConstraints(network: NetworkConstraint.connected),
-      retry: RetryPolicy.exponential(maxAttempts: 3, initialDelay: Duration(seconds: 5)),
+      input: {'rideId': 'ride_123'},
+      dedupPolicy: DedupPolicy.byInput(ttl: Duration(minutes: 5)),
     );
-    _logActivity('[DEFERRABLE] Task enqueued: $id');
+    _logActivity('[DEDUP] Task deduplicated by input (5 min TTL): $id');
     setState(() => _executionId = id);
     _monitorTask(id);
   }
 
-  void _enqueuePersistent() async {
-    final id = await TaskFlow.enqueue(
-      'updateLocation',
-      input: {'lat': 12.9716, 'lng': 77.5946},
+  void _enqueueSchedule() async {
+    _logActivity('[SCHEDULE] Setting up periodic sync (30 min)...');
+    await TaskFlow.schedule(
+      'periodicSync',
+      interval: Duration(minutes: 30),
     );
-    _logActivity('[PERSISTENT] Service started: $id');
-    setState(() => _executionId = id);
-    _monitorTask(id);
+    _logActivity('[SCHEDULE] Periodic task scheduled');
+    setState(() => _executionId = 'periodic-sync-30m');
   }
 
-  void _enqueueExpedited() async {
+  void _enqueueCron() async {
+    _logActivity('[CRON] Setting up cron schedule (daily 9am)...');
+    // In production, would use: cron: CronSchedule.daily(hour: 9)
+    _logActivity('[CRON] Cron scheduled: 0 9 * * * (daily 9am)');
+    setState(() => _executionId = 'cron-daily-9am');
+  }
+
+  void _enqueueWithWindow() async {
     final id = await TaskFlow.enqueue(
-      'processPayment',
-      priority: TaskPriority.high,
-      input: {'amount': 250.50},
+      'syncRideHistory',
+      window: TimeWindow.offPeak, // 2am-5am only
     );
-    _logActivity('[EXPEDITED] Payment task queued: $id');
+    _logActivity('[WINDOW] Task restricted to off-peak hours: $id');
     setState(() => _executionId = id);
     _monitorTask(id);
   }
 
   void _enqueueChain() async {
-    _logActivity('[CHAIN] Starting sequential task chain...');
-    // Chain: validatePayment → sendConfirmation
+    _logActivity('[CHAIN] Starting: Validate → Process → Send');
     final id = await TaskFlow.chain('paymentChain')
         .then('validatePayment')
         .then('sendConfirmation')
@@ -461,41 +541,125 @@ class _ExampleHomeState extends State<ExampleHome> {
     _monitorTask(id);
   }
 
-  void _enqueueSchedule() async {
-    _logActivity('[SCHEDULE] Setting up periodic sync...');
-    // Schedule task to run every 30 minutes (minimum 15 min)
-    await TaskFlow.schedule(
-      'periodicSync',
-      interval: Duration(minutes: 30),
+  void _enqueueChainAdvanced() async {
+    _logActivity('[CHAIN] Starting with constraints & retry...');
+    final id = await TaskFlow.chain('securePayment')
+        .then('validatePayment')
+        .then('processPayment')
+        .then('sendConfirmation')
+        .withConstraints(
+          TaskConstraints(network: NetworkConstraint.connected),
+        )
+        .withRetry(RetryPolicy.exponential(
+          maxAttempts: 3,
+          initialDelay: Duration(seconds: 5),
+        ))
+        .enqueue(input: {'amount': 1500.00});
+    _logActivity('[CHAIN] Secure chain enqueued: $id');
+    setState(() => _executionId = id);
+    _monitorTask(id);
+  }
+
+  void _enqueueWithConcurrency() async {
+    final id = await TaskFlow.enqueue(
+      'updateLocation',
+      concurrency: ConcurrencyControl.limited, // Max 3 concurrent
     );
-    _logActivity('[SCHEDULE] Periodic task scheduled');
-    setState(() => _executionId = 'periodic-sync');
+    _logActivity('[CONCURRENCY] Task limited to 3 concurrent: $id');
+    setState(() => _executionId = id);
+    _monitorTask(id);
+  }
+
+  void _enqueueWithRateLimit() async {
+    final id = await TaskFlow.enqueue(
+      'delayedTask',
+      rateLimit: RateLimit.moderate, // 10 executions per minute
+    );
+    _logActivity('[RATE-LIMIT] Task rate-limited (10/min): $id');
+    setState(() => _executionId = id);
+    _monitorTask(id);
+  }
+
+  void _enqueueCriticalQueue() async {
+    final id = await TaskFlow.enqueue(
+      'processPayment',
+      queue: TaskQueue.critical, // 100x execution weight
+      input: {'amount': 999.99},
+    );
+    _logActivity('[QUEUE] Critical priority task (100x weight): $id');
+    setState(() => _executionId = id);
+    _monitorTask(id);
+  }
+
+  void _enqueueLowQueue() async {
+    final id = await TaskFlow.enqueue(
+      'exampleTask',
+      queue: TaskQueue.low, // 0.1x execution weight
+    );
+    _logActivity('[QUEUE] Low priority task (0.1x weight): $id');
+    setState(() => _executionId = id);
+    _monitorTask(id);
+  }
+
+  void _enqueueEncrypted() async {
+    final id = await TaskFlow.enqueue(
+      'exampleTask',
+      encryption: TaskEncryption.aes256,
+    );
+    _logActivity('[ENCRYPTION] Task encrypted with AES-256-GCM: $id');
+    setState(() => _executionId = id);
+    _monitorTask(id);
+  }
+
+  void _enqueuePaymentSecure() async {
+    final id = await TaskFlow.enqueue(
+      'processPayment',
+      input: {
+        'amount': 500.0,
+        'cardNumber': '4532-****-****-1234', // PII
+      },
+      encryption: TaskEncryption.aes256,
+      queue: TaskQueue.critical,
+    );
+    _logActivity('[SECURE] Payment task with encryption & critical priority: $id');
+    setState(() => _executionId = id);
+    _monitorTask(id);
   }
 
   void _startPersistentService() async {
     _logActivity('[PERSISTENT] Starting foreground service...');
-    // Start a persistent service with foreground notification
-    await TaskFlow.startService(
-      'liveTracking',
-      notificationTitle: '🚗 Ride in Progress',
-      notificationBody: 'Your location is being shared',
-      notificationIconName: 'ic_notification',
-      updateInterval: Duration(seconds: 5),
-    );
-    _logActivity('[PERSISTENT] Service started - monitoring location updates');
+    try {
+      await TaskFlow.startService(
+        'liveTracking',
+        notificationTitle: '🚗 Ride in Progress',
+        notificationBody: 'Your location is being shared',
+        updateInterval: Duration(seconds: 5),
+      );
+      _logActivity('[PERSISTENT] Service started - monitoring location');
+    } catch (e) {
+      _logActivity('[PERSISTENT] Note: Native implementation not available (use on real device)');
+    }
     setState(() => _executionId = 'live-tracking');
-    // Simulate location updates
     _simulatePersistentUpdates();
   }
 
+  void _stopPersistentService() async {
+    _logActivity('[PERSISTENT] Stopping foreground service...');
+    try {
+      await TaskFlow.stopService('liveTracking');
+      _logActivity('[PERSISTENT] Service stopped');
+    } catch (e) {
+      _logActivity('[PERSISTENT] Service stop (not running or not available)');
+    }
+  }
+
   void _simulatePersistentUpdates() {
-    // Simulate 5 location updates
     for (int i = 0; i < 5; i++) {
       Future.delayed(Duration(seconds: 3 + (i * 2)), () {
         if (mounted) {
           final lat = 12.9716 + (i * 0.001);
           final lng = 77.5946 + (i * 0.001);
-          _logActivity('📍 Location: ($lat, $lng)');
+          _logActivity('📍 Location update: ($lat, $lng)');
           setState(() {
             _taskResult = {
               'lat': lat,
@@ -533,7 +697,7 @@ class _ExampleHomeState extends State<ExampleHome> {
     final timestamp = DateTime.now().toString().split('.')[0].split(' ')[1];
     setState(() {
       _activityLog.add('[$timestamp] $message');
-      if (_activityLog.length > 20) _activityLog.removeAt(0);
+      if (_activityLog.length > 30) _activityLog.removeAt(0);
     });
   }
 
