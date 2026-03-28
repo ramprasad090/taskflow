@@ -1,6 +1,6 @@
-# TaskFlow
+# bg_orchestrator
 
-[![pub package](https://img.shields.io/pub/v/taskflow.svg)](https://pub.dev/packages/taskflow)
+[![pub package](https://img.shields.io/pub/v/bg_orchestrator.svg)](https://pub.dev/packages/bg_orchestrator)
 [![Flutter Platform](https://img.shields.io/badge/platform-flutter-blue.svg)](https://flutter.dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-purple.svg)](https://opensource.org/licenses/MIT)
 
@@ -584,7 +584,7 @@ TaskConstraints(
 
 ```yaml
 dependencies:
-  taskflow: ^1.0.0
+  bg_orchestrator: ^1.0.1
 ```
 
 ### iOS Setup
@@ -639,7 +639,7 @@ Full example at [example/lib/main.dart](example/lib/main.dart):
 
 ```dart
 import 'package:flutter/material.dart';
-import 'package:taskflow/taskflow.dart';
+import 'package:bg_orchestrator/bg_orchestrator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
