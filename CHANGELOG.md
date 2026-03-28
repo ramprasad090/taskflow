@@ -1,3 +1,9 @@
+## 1.0.2
+
+* Fix pubspec.yaml description length (max 180 chars for pub.dev display).
+* Update all remaining taskflow references to bg_orchestrator.
+* Fix example app and test imports to use correct package name.
+
 ## 1.0.1
 
 * Fix test import warnings by updating to use bg_orchestrator package name.
