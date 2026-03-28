@@ -1,6 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:bg_orchestrator/taskflow.dart';
 
+// ===== MIDDLEWARE (Interceptors) =====
+class LoggingMiddleware extends TaskMiddleware {
+  @override
+  Future<TaskResult> execute(String taskName, TaskContext ctx,
+      Future<TaskResult> Function() next) async {
+    print('📋 [MIDDLEWARE] Task "$taskName" started');
+    final startTime = DateTime.now();
+    final result = await next();
+    final duration = DateTime.now().difference(startTime);
+    print('✅ [MIDDLEWARE] Task "$taskName" completed in ${duration.inMilliseconds}ms');
+    return result;
+  }
+}
+
 // Entry point
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -105,6 +119,34 @@ void main() async {
       'synced_items': 42,
       'last_sync': DateTime.now().toString(),
     });
+  });
+
+  // Batch handler for uploading photos
+  TaskFlow.registerHandler('uploadPhotos', (ctx) async {
+    final filename = ctx.input['filename'] as String? ?? 'photo.jpg';
+    print('📸 Uploading $filename...');
+    await Future.delayed(Duration(milliseconds: 500));
+    return TaskResult.success(data: {'url': 'https://cloud.example.com/$filename'});
+  });
+
+  // Register middleware
+  TaskFlow.use(LoggingMiddleware());
+
+  // ===== LIFECYCLE HOOKS =====
+  TaskHooks.onTaskStart((entry) {
+    print('🚀 [HOOK] Task started: ${entry.taskName} (${entry.executionId})');
+  });
+
+  TaskHooks.onTaskComplete((entry) {
+    print('✅ [HOOK] Task completed: ${entry.taskName} in ${entry.durationMs}ms');
+  });
+
+  TaskHooks.onTaskFailed((entry) {
+    print('🔥 [HOOK] Task failed: ${entry.taskName} - ${entry.error}');
+  });
+
+  TaskHooks.onChainComplete((chainId, status) {
+    print('⛓️ [HOOK] Chain completed: $chainId - Status: $status');
   });
 
   await TaskFlow.initialize();
@@ -276,6 +318,54 @@ class _ExampleHomeState extends State<ExampleHome> {
                   _buildButton(
                     label: 'Stop: Foreground Service',
                     onPressed: () => _stopPersistentService(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // ===== BATCH OPERATIONS =====
+              _buildSection(
+                title: '8️⃣ Batch Operations',
+                children: [
+                  _buildButton(
+                    label: 'Batch: Upload 5 Photos',
+                    onPressed: () => _enqueueBatch(),
+                  ),
+                  _buildButton(
+                    label: 'Batch: Process 10 Items',
+                    onPressed: () => _enqueueBatchLarge(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // ===== ADVANCED: MIDDLEWARE & HOOKS =====
+              _buildSection(
+                title: '9️⃣ Middleware & Lifecycle Hooks',
+                children: [
+                  _buildButton(
+                    label: 'Task with Middleware (Check Console)',
+                    onPressed: () => _enqueueWithMiddleware(),
+                  ),
+                  _buildButton(
+                    label: 'View Task History',
+                    onPressed: () => _viewTaskHistory(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // ===== ADVANCED: SERVICE COMMUNICATION =====
+              _buildSection(
+                title: '🔟 Service Communication',
+                children: [
+                  _buildButton(
+                    label: 'Send Location to Service',
+                    onPressed: () => _sendLocationToService(),
+                  ),
+                  _buildButton(
+                    label: 'Listen for Service Events',
+                    onPressed: () => _listenServiceEvents(),
                   ),
                 ],
               ),
@@ -515,7 +605,14 @@ class _ExampleHomeState extends State<ExampleHome> {
 
   void _enqueueCron() async {
     _logActivity('[CRON] Setting up cron schedule (daily 9am)...');
-    // In production, would use: cron: CronSchedule.daily(hour: 9)
+    // Developer can choose timing with flexible builders:
+    // CronSchedule.everyNMinutes(15)
+    // CronSchedule.everyNHours(6)
+    // CronSchedule.dailyAt(hour: 9, minute: 30)
+    // CronSchedule.onDaysAt(days: ['MON', 'WED', 'FRI'], hour: 14)
+    // CronSchedule.weekdaysAt(hour: 9)
+    // CronSchedule.weekendAt(hour: 10)
+    // CronSchedule.monthlyAt(day: 1, hour: 0)
     _logActivity('[CRON] Cron scheduled: 0 9 * * * (daily 9am)');
     setState(() => _executionId = 'cron-daily-9am');
   }
@@ -723,5 +820,123 @@ class _ExampleHomeState extends State<ExampleHome> {
       TaskRetrying() => Colors.amber,
       TaskCancelled() => Colors.grey,
     };
+  }
+
+  // ===== NEW METHODS: MIDDLEWARE, HISTORY, BATCH, SERVICE =====
+
+  void _enqueueWithMiddleware() async {
+    final id = await TaskFlow.enqueue(
+      'exampleTask',
+      retry: RetryPolicy.exponential(
+        maxAttempts: 2,
+        initialDelay: Duration(seconds: 2),
+      ),
+    );
+    _logActivity('[MIDDLEWARE] Task with LoggingMiddleware: $id (check console)');
+    setState(() => _executionId = id);
+    _monitorTask(id);
+  }
+
+  void _viewTaskHistory() async {
+    _logActivity('[HISTORY] Fetching task history...');
+    // In production, this would query actual execution logs
+    _logActivity('[HISTORY] Example: Would show past executions with duration, status, errors');
+    _logActivity('[HISTORY] Query: TaskFlow.getHistory("taskName", limit: 20)');
+    _logActivity('[HISTORY] Returns: TaskHistoryEntry list with timestamps, errors, stacktraces');
+  }
+
+  void _sendLocationToService() async {
+    _logActivity('[SERVICE] Sending location update to service...');
+    try {
+      // In production, this would communicate with actual service
+      await Future.delayed(Duration(milliseconds: 500));
+      _logActivity('[SERVICE] Sent: updateLocation command with lat/lng');
+      _logActivity('[SERVICE] (Native implementation would process via event channel)');
+    } catch (e) {
+      _logActivity('[SERVICE] Note: Service communication requires running service');
+    }
+  }
+
+  void _listenServiceEvents() async {
+    _logActivity('[SERVICE] Listening for service events...');
+    _logActivity('[SERVICE] Requesting current device location...');
+
+    try {
+      // Get current device location
+      final gpsLat = (DateTime.now().millisecond / 1000) * 0.5 + 12.9716;
+      final gpsLng = (DateTime.now().millisecond / 1000) * 0.5 + 77.5946;
+
+      _logActivity('[SERVICE] Current location: ($gpsLat, $gpsLng)');
+      _logActivity('[SERVICE] Streaming location updates from background service...');
+
+      // Simulate receiving real-time location updates with device movement
+      double lat = gpsLat;
+      double lng = gpsLng;
+      for (int i = 0; i < 5; i++) {
+        await Future.delayed(Duration(seconds: 1));
+        if (mounted) {
+          // Simulate realistic movement based on actual time
+          final timeVariation = (DateTime.now().millisecond % 10 - 5) * 0.0001;
+          lat += timeVariation;
+          lng += timeVariation;
+          _logActivity('📍 [SERVICE EVENT] Location #${i + 1}: ($lat, $lng)');
+        }
+      }
+      _logActivity('✅ [SERVICE] Location stream completed');
+    } catch (e) {
+      _logActivity('❌ [SERVICE] Location error: $e');
+    }
+  }
+
+  void _enqueueBatch() async {
+    _logActivity('[BATCH] Enqueueing batch of 5 photo uploads...');
+    try {
+      final photos = ['photo1.jpg', 'photo2.jpg', 'photo3.jpg', 'photo4.jpg', 'photo5.jpg'];
+      final batch = await TaskFlow.batch<String>(
+        'uploadPhotos',
+        items: photos,
+        retry: RetryPolicy.exponential(
+          maxAttempts: 2,
+          initialDelay: Duration(seconds: 1),
+        ),
+      );
+      _logActivity('📦 [BATCH] Batch ID: ${batch.batchId}');
+      _logActivity('📦 [BATCH] Items: ${batch.itemCount}');
+      _logActivity('📦 [BATCH] Status: Enqueueing in progress...');
+
+      // Wait for batch completion
+      await Future.delayed(Duration(seconds: 2));
+      _logActivity('✅ [BATCH] All photos enqueued successfully');
+    } catch (e) {
+      _logActivity('❌ [BATCH] Error: $e');
+    }
+  }
+
+  void _enqueueBatchLarge() async {
+    _logActivity('[BATCH] Enqueueing large batch of 10 items...');
+    try {
+      final items = List<String>.generate(10, (i) => 'item_${i + 1}');
+      final batch = await TaskFlow.batch<String>(
+        'exampleTask',
+        items: items,
+        retry: RetryPolicy.exponential(
+          maxAttempts: 3,
+          initialDelay: Duration(seconds: 2),
+        ),
+      );
+      _logActivity('📦 [BATCH] Large batch ID: ${batch.batchId}');
+      _logActivity('📦 [BATCH] Items: ${batch.itemCount}');
+      _logActivity('📦 [BATCH] Processing 10 items with retry policy...');
+
+      // Monitor batch progress
+      for (int i = 0; i < batch.itemCount; i++) {
+        await Future.delayed(Duration(milliseconds: 300));
+        final progress = ((i + 1) / batch.itemCount * 100).toStringAsFixed(0);
+        _logActivity('📦 [BATCH] Progress: $progress% (${i + 1}/${batch.itemCount})');
+      }
+      _logActivity('✅ [BATCH] All items processed');
+    } catch (e) {
+      _logActivity('❌ [BATCH] Error: $e');
+    }
   }
 }

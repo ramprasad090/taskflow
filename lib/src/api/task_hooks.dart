@@ -61,6 +61,8 @@ abstract class TaskHooks {
   }
 
   /// Internal: fire onTaskStart
+  /// Called by platform layer when task execution starts
+  @pragma('vm:entry-point')
   static void _fireOnTaskStart(TaskHistoryEntry entry) {
     for (final callback in _onTaskStart) {
       try {
@@ -72,6 +74,8 @@ abstract class TaskHooks {
   }
 
   /// Internal: fire onTaskComplete
+  /// Called by platform layer when task execution completes
+  @pragma('vm:entry-point')
   static void _fireOnTaskComplete(TaskHistoryEntry entry) {
     for (final callback in _onTaskComplete) {
       try {
@@ -83,6 +87,8 @@ abstract class TaskHooks {
   }
 
   /// Internal: fire onTaskFailed
+  /// Called by platform layer when task execution fails
+  @pragma('vm:entry-point')
   static void _fireOnTaskFailed(TaskHistoryEntry entry) {
     for (final callback in _onTaskFailed) {
       try {
@@ -94,6 +100,8 @@ abstract class TaskHooks {
   }
 
   /// Internal: fire onChainComplete
+  /// Called by platform layer when task chain completes
+  @pragma('vm:entry-point')
   static void _fireOnChainComplete(String chainId, String status) {
     for (final callback in _onChainComplete) {
       try {

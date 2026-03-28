@@ -27,6 +27,70 @@ class CronSchedule {
 
   const CronSchedule(this.expression);
 
+  /// Builder: Every N minutes
+  /// Example: `CronSchedule.everyNMinutes(5)` → Every 5 minutes
+  factory CronSchedule.everyNMinutes(int minutes) {
+    if (minutes < 1 || minutes > 59) {
+      throw ArgumentError('Minutes must be between 1 and 59');
+    }
+    return CronSchedule('*/$minutes * * * *');
+  }
+
+  /// Builder: Every N hours
+  /// Example: `CronSchedule.everyNHours(6)` → Every 6 hours
+  factory CronSchedule.everyNHours(int hours) {
+    if (hours < 1 || hours > 23) {
+      throw ArgumentError('Hours must be between 1 and 23');
+    }
+    return CronSchedule('0 */$hours * * *');
+  }
+
+  /// Builder: At specific time daily
+  /// Example: `CronSchedule.dailyAt(hour: 9, minute: 30)` → 9:30 AM daily
+  factory CronSchedule.dailyAt({required int hour, int minute = 0}) {
+    if (hour < 0 || hour > 23) throw ArgumentError('Hour must be 0-23');
+    if (minute < 0 || minute > 59) throw ArgumentError('Minute must be 0-59');
+    return CronSchedule('$minute $hour * * *');
+  }
+
+  /// Builder: Specific days at specific time
+  /// Example: `CronSchedule.onDaysAt(days: ['MON', 'WED', 'FRI'], hour: 9)` → 9 AM on Mon/Wed/Fri
+  factory CronSchedule.onDaysAt({
+    required List<String> days,
+    required int hour,
+    int minute = 0,
+  }) {
+    if (hour < 0 || hour > 23) throw ArgumentError('Hour must be 0-23');
+    if (minute < 0 || minute > 59) throw ArgumentError('Minute must be 0-59');
+    final dayStr = days.join(',');
+    return CronSchedule('$minute $hour * * $dayStr');
+  }
+
+  /// Builder: Weekdays at specific time
+  /// Example: `CronSchedule.weekdaysAt(hour: 9)` → 9 AM Mon-Fri
+  factory CronSchedule.weekdaysAt({required int hour, int minute = 0}) {
+    if (hour < 0 || hour > 23) throw ArgumentError('Hour must be 0-23');
+    if (minute < 0 || minute > 59) throw ArgumentError('Minute must be 0-59');
+    return CronSchedule('$minute $hour * * 1-5');
+  }
+
+  /// Builder: Weekends at specific time
+  /// Example: `CronSchedule.weekendAt(hour: 10)` → 10 AM on Sat/Sun
+  factory CronSchedule.weekendAt({required int hour, int minute = 0}) {
+    if (hour < 0 || hour > 23) throw ArgumentError('Hour must be 0-23');
+    if (minute < 0 || minute > 59) throw ArgumentError('Minute must be 0-59');
+    return CronSchedule('$minute $hour * * 0,6');
+  }
+
+  /// Builder: Monthly at specific date and time
+  /// Example: `CronSchedule.monthlyAt(day: 1, hour: 9)` → 1st of month at 9 AM
+  factory CronSchedule.monthlyAt({required int day, required int hour, int minute = 0}) {
+    if (day < 1 || day > 31) throw ArgumentError('Day must be 1-31');
+    if (hour < 0 || hour > 23) throw ArgumentError('Hour must be 0-23');
+    if (minute < 0 || minute > 59) throw ArgumentError('Minute must be 0-59');
+    return CronSchedule('$minute $hour $day * *');
+  }
+
   /// Parse and validate cron expression
   bool isValid() {
     try {

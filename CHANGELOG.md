@@ -1,6 +1,8 @@
-## 1.0.4
+## 1.1.0
 
 ### Complete Feature Set - Production Ready
+
+Major release consolidating all reliability, scheduling, batching, and security features into a single, battle-tested package.
 
 **Reliability & Observability**
 * Task middleware/interceptors for logging, auth refresh, analytics

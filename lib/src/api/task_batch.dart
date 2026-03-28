@@ -71,12 +71,16 @@ class TaskBatch {
   }
 
   /// Internal: mark item as completed
+  /// Used by platform layer to report batch item completion
+  @pragma('vm:entry-point')
   void _markCompleted() {
     _completedCount++;
     _checkCompletion();
   }
 
   /// Internal: mark item as failed
+  /// Used by platform layer to report batch item failure
+  @pragma('vm:entry-point')
   void _markFailed() {
     _failedCount++;
     _checkCompletion();

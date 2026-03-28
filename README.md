@@ -36,7 +36,7 @@ Flutter developers currently juggle 3-4 fragile packages with no task chaining, 
 
 ```yaml
 dependencies:
-  bg_orchestrator: ^1.0.4
+  bg_orchestrator: ^1.1.0
 ```
 
 ### iOS Setup
@@ -175,17 +175,58 @@ await TaskFlow.schedule(
 );
 ```
 
-**Cron expression (5-field syntax):**
+**Cron expression with developer-friendly builders:**
 ```dart
+// Every N minutes
 await TaskFlow.schedule(
-  'dailyReport',
-  cron: CronSchedule.daily(hour: 9),  // Every day at 9am
+  'sync',
+  cron: CronSchedule.everyNMinutes(15),  // Every 15 minutes
 );
 
-// Or custom cron
+// Every N hours
 await TaskFlow.schedule(
-  'weeklyCleanup',
-  cron: CronSchedule.cron('0 2 * * MON'),  // Every Monday at 2am
+  'checkStatus',
+  cron: CronSchedule.everyNHours(6),  // Every 6 hours
+);
+
+// At specific time daily
+await TaskFlow.schedule(
+  'dailyReport',
+  cron: CronSchedule.dailyAt(hour: 9, minute: 30),  // 9:30 AM every day
+);
+
+// Specific days at specific time
+await TaskFlow.schedule(
+  'weeklyMeeting',
+  cron: CronSchedule.onDaysAt(
+    days: ['MON', 'WED', 'FRI'],
+    hour: 14,
+    minute: 0,
+  ),  // 2:00 PM on Mon/Wed/Fri
+);
+
+// Weekdays at specific time
+await TaskFlow.schedule(
+  'businessSync',
+  cron: CronSchedule.weekdaysAt(hour: 9),  // 9 AM Mon-Fri
+);
+
+// Weekends at specific time
+await TaskFlow.schedule(
+  'weekendReport',
+  cron: CronSchedule.weekendAt(hour: 10),  // 10 AM on Sat/Sun
+);
+
+// Monthly at specific date and time
+await TaskFlow.schedule(
+  'monthlyBilling',
+  cron: CronSchedule.monthlyAt(day: 1, hour: 0),  // 1st of month at midnight
+);
+
+// Raw cron expression (5-field standard syntax)
+await TaskFlow.schedule(
+  'customSchedule',
+  cron: CronSchedule('0 9-17 * * 1-5'),  // Every hour 9am-5pm, Mon-Fri
 );
 ```
 
@@ -617,21 +658,78 @@ See [example/lib/main.dart](example/lib/main.dart) for a comprehensive app demon
 ## Limitations & Notes
 
 ### Android
-- Minimum periodic interval: **15 minutes** (WorkManager)
-- Task inputs/outputs limited to **10 KB** (WorkManager)
-- Chaining is native via WorkManager's WorkContinuation
+- **Minimum periodic interval**: 15 minutes (WorkManager hard limit)
+- **Task inputs/outputs**: Limited to 10 KB per task (WorkManager constraint)
+- **Chaining**: Native via WorkManager's WorkContinuation (guaranteed)
+- **OEM restrictions**: Some manufacturers (Xiaomi, Samsung, Huawei) may aggressively kill background tasks
+- **Doze mode**: Tasks may be delayed in Doze/App Standby unless exempt
+- **Network constraints**: Network state changes may interrupt running tasks
 
 ### iOS
-- Task chaining is simulated using UserDefaults (best-effort)
-- System controls actual execution timing
-- Background execution limited; tasks may be interrupted
+- **Task chaining**: Simulated using UserDefaults (best-effort, not guaranteed)
+- **Execution timing**: System controls when tasks run; may be delayed or skipped
+- **Background time**: Limited to ~15 minutes before app is suspended
+- **Silent notifications**: Periodic tasks wake app only if system decides to
+- **Foreground services**: Not fully supported; use WatchKit or CallKit for always-on behavior
+- **Battery optimization**: Apple may delay tasks to preserve battery
 
 ### General
-- Task input/output must be JSON-serializable (`Map<String, dynamic>`)
-- Handlers must be top-level (required for background isolates)
-- Dispatcher function requires `@pragma('vm:entry-point')` annotation
+- **Input/output serialization**: Must be JSON-serializable (`Map<String, dynamic>`)
+- **Handler restrictions**: Handlers must be top-level functions (required for background isolates)
+- **Dispatcher annotation**: Requires `@pragma('vm:entry-point')` for headless execution
+- **No closures**: Cannot capture instance state; use input parameters instead
+- **Encryption keys**: Stored in platform keychain; lost if app is uninstalled
+- **Network access**: Background tasks may have limited network access on some devices
+- **File access**: Temporary files may be deleted by OS during background execution
+- **Database locks**: SQLite connections may time out in background context
+
+### Performance & Scalability
+- **Concurrent tasks**: Practically limited to 3-5 on-device (more causes memory pressure)
+- **Queue throughput**: ~100-500 tasks/hour depending on device and handler complexity
+- **Memory overhead**: ~1-2 MB per 100 queued tasks
+- **Storage**: Task database grows with execution history; manually prune old entries
+- **Battery impact**: Heavy background work reduces battery life significantly
+
+### Feature Limitations
+- **Middleware**: Runs in Dart VM; cannot be bypassed by system
+- **Timeouts**: Soft timeout warnings may not fire if task is already killed
+- **History**: Execution logs not synced across devices or sessions
+- **Encryption**: Keys not backed up; re-install loses encrypted task data
+- **Batching**: Large batches may cause memory issues; recommend max 1000 items
+- **Rate limiting**: Best-effort only; system may skip tasks during low-power mode
+- **Cron expressions**: iOS treats as periodic interval (not exact times)
+- **Time windows**: Enforced by TaskFlow but may be delayed by system
+
+### Known Issues & Workarounds
+
+**Issue**: Tasks fail silently on iOS in release mode
+- **Cause**: Background execution requires specific permissions
+- **Workaround**: Ensure Info.plist has correct BGTaskSchedulerPermittedIdentifiers
+
+**Issue**: WorkManager tasks execute immediately despite constraints
+- **Cause**: Device in unmetered network; constraints satisfied
+- **Workaround**: Add explicit network constraint verification in handler
+
+**Issue**: Task history grows too large
+- **Cause**: No automatic cleanup of old entries
+- **Workaround**: Periodically call `getHistory()` and delete old entries manually
+
+**Issue**: Encrypted tasks slow down on older devices
+- **Cause**: AES-256-GCM is CPU-intensive
+- **Workaround**: Only encrypt sensitive data; disable for high-throughput tasks
+
+**Issue**: Persistent services killed after 15 minutes on iOS
+- **Cause**: iOS AppDelegate Background time limit
+- **Workaround**: Use location services or VoIP background mode as workaround
 
 ---
+
+## Additional Resources
+
+- **[Production Guide](PRODUCTION_GUIDE.md)** — Battle-tested patterns, error handling, monitoring, security best practices
+- **[Comparison Guide](COMPARISON.md)** — Why bg_orchestrator beats workmanager, flutter_background_service, and competitors
+- **[Roadmap](ROADMAP.md)** — Future features and vision
+- **[Example App](example/lib/main.dart)** — Comprehensive implementation examples
 
 ## Contributing
 
