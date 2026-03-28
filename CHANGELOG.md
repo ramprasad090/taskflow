@@ -3,6 +3,8 @@
 * Fix pubspec.yaml description length (max 180 chars for pub.dev display).
 * Update all remaining taskflow references to bg_orchestrator.
 * Fix example app and test imports to use correct package name.
+* Enhance example app with real-time results display and activity log.
+* Add complete Ola/Uber ride-hailing example demonstrating all three execution modes.
 
 ## 1.0.1
 
