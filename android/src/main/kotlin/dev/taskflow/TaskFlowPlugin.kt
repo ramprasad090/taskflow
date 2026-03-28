@@ -74,7 +74,8 @@ class TaskFlowPlugin : FlutterPlugin, MethodCallHandler {
         // Emit Queued status
         eventSink?.success(mapOf(
           "executionId" to executionId,
-          "status" to "TaskQueued"
+          "taskName" to "exampleTask",
+          "type" to "queued"
         ))
 
         Thread.sleep(500)
@@ -83,7 +84,8 @@ class TaskFlowPlugin : FlutterPlugin, MethodCallHandler {
         for (i in 1..5) {
           eventSink?.success(mapOf(
             "executionId" to executionId,
-            "status" to "TaskRunning",
+            "taskName" to "exampleTask",
+            "type" to "running",
             "progress" to (i * 0.2)
           ))
           Thread.sleep(400)
@@ -92,8 +94,9 @@ class TaskFlowPlugin : FlutterPlugin, MethodCallHandler {
         // Emit Succeeded status
         eventSink?.success(mapOf(
           "executionId" to executionId,
-          "status" to "TaskSucceeded",
-          "output" to mapOf("result" to "Task completed successfully!")
+          "taskName" to "exampleTask",
+          "type" to "succeeded",
+          "data" to mapOf("result" to "Task completed successfully!")
         ))
       } catch (e: Exception) {
         e.printStackTrace()

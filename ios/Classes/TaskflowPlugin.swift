@@ -80,7 +80,8 @@ public class TaskFlowPlugin: NSObject, FlutterPlugin {
       // Emit Queued status
       TaskFlowPlugin.eventSink?([
         "executionId": executionId,
-        "status": "TaskQueued"
+        "taskName": "exampleTask",
+        "type": "queued"
       ])
 
       DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
@@ -89,7 +90,8 @@ public class TaskFlowPlugin: NSObject, FlutterPlugin {
           DispatchQueue.global().asyncAfter(deadline: .now() + Double(i - 1) * 0.4) {
             TaskFlowPlugin.eventSink?([
               "executionId": executionId,
-              "status": "TaskRunning",
+              "taskName": "exampleTask",
+              "type": "running",
               "progress": Double(i) * 0.2
             ])
           }
@@ -99,8 +101,9 @@ public class TaskFlowPlugin: NSObject, FlutterPlugin {
         DispatchQueue.global().asyncAfter(deadline: .now() + 2.0) {
           TaskFlowPlugin.eventSink?([
             "executionId": executionId,
-            "status": "TaskSucceeded",
-            "output": ["result": "Task completed successfully!"]
+            "taskName": "exampleTask",
+            "type": "succeeded",
+            "data": ["result": "Task completed successfully!"]
           ])
         }
       }
