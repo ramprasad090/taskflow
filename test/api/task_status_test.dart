@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskflow/src/api/task_status.dart';
+import 'package:bg_orchestrator/src/api/task_status.dart';
 
 void main() {
   group('TaskStatus', () {
