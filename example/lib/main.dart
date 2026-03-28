@@ -846,6 +846,7 @@ class _ExampleHomeState extends State<ExampleHome> {
   }
 
   void _sendLocationToService() async {
+    
     _logActivity('[SERVICE] Sending location update to service...');
     try {
       // In production, this would communicate with actual service
