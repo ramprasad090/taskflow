@@ -8,11 +8,11 @@ A production-grade, cross-platform background task orchestrator for Flutter. Uni
 
 **Chain tasks. Retry with backoff. Monitor progress. One API for both platforms.**
 
-## Why TaskFlow?
+## Why bg_orchestrator?
 
-Flutter developers currently juggle 3-4 fragile packages and can't chain tasks, report progress, or get iOS parity. TaskFlow solves all of this.
+Flutter developers currently juggle 3-4 fragile packages and can't chain tasks, report progress, or get iOS parity. **bg_orchestrator** solves all of this.
 
-| Feature | TaskFlow | workmanager | flutter_background_service |
+| Feature | bg_orchestrator | workmanager | flutter_background_service |
 |---------|----------|-------------|--------------------------|
 | Unified API | ✅ | ❌ | ❌ |
 | Task Chaining | ✅ | ❌ | ❌ |
@@ -22,7 +22,7 @@ Flutter developers currently juggle 3-4 fragile packages and can't chain tasks, 
 
 ## Architecture
 
-TaskFlow uses a **4-layer design** for clean separation of concerns:
+**bg_orchestrator** uses a **4-layer design** for clean separation of concerns:
 
 ### Layer 1: Dart API (Public Interface)
 
@@ -238,15 +238,14 @@ TaskFlow.enqueue('syncData',
 // ⏱️ Execution timing: System decides (respects constraints)
 ```
 
-**2. Persistent Services** (Always-on, Phase 5+)
+**2. Persistent Services** (Always-on foreground service)
 ```dart
-TaskFlow.startService('liveTracking',
-  handlers: {
-    'updateLocation': (ctx) async {
-      // GPS update handler
-      return TaskResult.success();
-    },
-  },
+await TaskFlow.startService(
+  'liveTracking',
+  notificationTitle: 'Ride in Progress',
+  notificationBody: 'Your location is being shared',
+  notificationIconName: 'ic_notification',
+  updateInterval: Duration(seconds: 10),
 );
 // 🎯 Continuous background work
 // 📍 GPS tracking, WebSocket, BLE, real-time updates
@@ -876,7 +875,7 @@ await TaskFlow.enqueue(
 
 ## Contributing
 
-Issues and PRs welcome! TaskFlow aims to be the simplest, most reliable background task solution for Flutter.
+Issues and PRs welcome! **bg_orchestrator** aims to be the simplest, most reliable background task solution for Flutter.
 
 ## License
 

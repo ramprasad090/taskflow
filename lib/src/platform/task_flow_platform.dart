@@ -77,6 +77,23 @@ abstract class TaskFlowPlatform extends PlatformInterface {
     throw UnimplementedError('unschedule() has not been implemented.');
   }
 
+  /// Starts a persistent background service with foreground notification.
+  Future<void> startService({
+    required String name,
+    required String notificationTitle,
+    required String notificationBody,
+    String? notificationIconName,
+    int notificationId = 1001,
+    int? updateIntervalMs,
+  }) {
+    throw UnimplementedError('startService() has not been implemented.');
+  }
+
+  /// Stops a persistent background service.
+  Future<void> stopService(String name) {
+    throw UnimplementedError('stopService() has not been implemented.');
+  }
+
   /// Cancels all executions of a task by name.
   Future<void> cancel(String name) {
     throw UnimplementedError('cancel() has not been implemented.');

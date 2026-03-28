@@ -1,10 +1,14 @@
 ## 1.0.3
 
+* **NEW: Persistent Service API** — `TaskFlow.startService()` for always-on background services.
+* Supports GPS tracking, real-time messaging, WebSocket, and BLE communication.
+* Foreground service with notification support (Android) and 15-minute limit (iOS).
 * Add task chaining example demonstrating sequential task execution.
 * Add periodic scheduling example (15+ minute intervals).
 * Enhance example app with task result display and real-time activity logging.
 * Show transaction IDs, GPS coordinates, and sync data for each execution mode.
 * Demonstrate all five execution patterns: enqueue, chain, schedule, persistent, expedited.
+* Fix README branding (TaskFlow → bg_orchestrator).
 
 ## 1.0.2
 

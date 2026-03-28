@@ -202,6 +202,15 @@ class _ExampleHomeState extends State<ExampleHome> {
                 buttonLabel: 'Schedule Sync (every 30 min)',
                 onPressed: () => _enqueueSchedule(),
               ),
+              const SizedBox(height: 16),
+
+              // ===== PERSISTENT SERVICE =====
+              _buildModeSection(
+                title: '🎯 Persistent Service (Always-on)',
+                description: 'Foreground service for GPS, WebSocket, BLE - limited to ~15 min on iOS',
+                buttonLabel: 'Start Live Tracking Service',
+                onPressed: () => _startPersistentService(),
+              ),
 
               const SizedBox(height: 24),
               const Divider(),
@@ -461,6 +470,42 @@ class _ExampleHomeState extends State<ExampleHome> {
     );
     _logActivity('[SCHEDULE] Periodic task scheduled');
     setState(() => _executionId = 'periodic-sync');
+  }
+
+  void _startPersistentService() async {
+    _logActivity('[PERSISTENT] Starting foreground service...');
+    // Start a persistent service with foreground notification
+    await TaskFlow.startService(
+      'liveTracking',
+      notificationTitle: '🚗 Ride in Progress',
+      notificationBody: 'Your location is being shared',
+      notificationIconName: 'ic_notification',
+      updateInterval: Duration(seconds: 5),
+    );
+    _logActivity('[PERSISTENT] Service started - monitoring location updates');
+    setState(() => _executionId = 'live-tracking');
+    // Simulate location updates
+    _simulatePersistentUpdates();
+  }
+
+  void _simulatePersistentUpdates() {
+    // Simulate 5 location updates
+    for (int i = 0; i < 5; i++) {
+      Future.delayed(Duration(seconds: 3 + (i * 2)), () {
+        if (mounted) {
+          final lat = 12.9716 + (i * 0.001);
+          final lng = 77.5946 + (i * 0.001);
+          _logActivity('📍 Location: ($lat, $lng)');
+          setState(() {
+            _taskResult = {
+              'lat': lat,
+              'lng': lng,
+              'timestamp': DateTime.now().toString(),
+            };
+          });
+        }
+      });
+    }
   }
 
   void _monitorTask(String executionId) {

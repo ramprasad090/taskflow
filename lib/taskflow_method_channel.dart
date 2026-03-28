@@ -107,6 +107,30 @@ class MethodChannelTaskFlow extends TaskFlowPlatform {
   }
 
   @override
+  Future<void> startService({
+    required String name,
+    required String notificationTitle,
+    required String notificationBody,
+    String? notificationIconName,
+    int notificationId = 1001,
+    int? updateIntervalMs,
+  }) async {
+    await methodChannel.invokeMethod('startService', {
+      'name': name,
+      'notificationTitle': notificationTitle,
+      'notificationBody': notificationBody,
+      'notificationIconName': notificationIconName,
+      'notificationId': notificationId,
+      'updateIntervalMs': updateIntervalMs,
+    });
+  }
+
+  @override
+  Future<void> stopService(String name) async {
+    await methodChannel.invokeMethod('stopService', {'name': name});
+  }
+
+  @override
   Future<void> cancel(String name) async {
     await methodChannel.invokeMethod('cancel', {'name': name});
   }

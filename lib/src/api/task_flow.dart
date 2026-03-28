@@ -179,6 +179,57 @@ abstract final class TaskFlow {
     await TaskFlowPlatform.instance.unschedule(name);
   }
 
+  /// Starts a persistent background service with foreground notification.
+  ///
+  /// On Android: Requires foreground notification to prevent app kill.
+  /// On iOS: Limited to ~15 minutes of background execution (system constraint).
+  ///
+  /// Use this for:
+  /// - GPS tracking (ride-hailing, delivery)
+  /// - Real-time messaging (chat, notifications)
+  /// - WebSocket connections
+  /// - BLE scanning/communication
+  ///
+  /// Example:
+  /// ```dart
+  /// await TaskFlow.startService(
+  ///   'liveTracking',
+  ///   notificationTitle: 'Tracking Active',
+  ///   notificationBody: 'Your location is being shared',
+  ///   handlers: {
+  ///     'updateLocation': (ctx) async {
+  ///       final lat = ctx.input['lat'] as double?;
+  ///       final lng = ctx.input['lng'] as double?;
+  ///       return TaskResult.success();
+  ///     },
+  ///   },
+  /// );
+  /// ```
+  static Future<void> startService(
+    String name, {
+    required String notificationTitle,
+    required String notificationBody,
+    String? notificationIconName,
+    int notificationId = 1001,
+    Duration? updateInterval,
+  }) async {
+    _ensureInitialized();
+    await TaskFlowPlatform.instance.startService(
+      name: name,
+      notificationTitle: notificationTitle,
+      notificationBody: notificationBody,
+      notificationIconName: notificationIconName,
+      notificationId: notificationId,
+      updateIntervalMs: updateInterval?.inMilliseconds,
+    );
+  }
+
+  /// Stops a persistent background service.
+  static Future<void> stopService(String name) async {
+    _ensureInitialized();
+    await TaskFlowPlatform.instance.stopService(name);
+  }
+
   /// Monitors the status of a task by name.
   ///
   /// Returns a stream of [TaskStatus] updates.
