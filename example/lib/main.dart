@@ -5,7 +5,54 @@ import 'package:bg_orchestrator/taskflow.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Register task handlers in main isolate (simple example)
+  // ==================== RIDE-HAILING EXAMPLE (Ola/Uber) ====================
+
+  // Mode 1: Deferrable Task - Sync ride history after trip ends
+  TaskFlow.registerHandler('syncRideHistory', (ctx) async {
+    final rideId = ctx.input['rideId'] as String? ?? 'ride_123';
+    print('📊 Syncing ride history for $rideId...');
+    await Future.delayed(Duration(seconds: 2));
+    await ctx.reportProgress(0.5);
+    await Future.delayed(Duration(seconds: 2));
+    await ctx.reportProgress(1.0);
+    return TaskResult.success(data: {
+      'synced': true,
+      'rideId': rideId,
+      'timestamp': DateTime.now().toString(),
+    });
+  });
+
+  // Mode 2: Persistent Service - Live GPS tracking (always-on)
+  TaskFlow.registerHandler('updateLocation', (ctx) async {
+    final latitude = (ctx.input['lat'] as num?)?.toDouble() ?? 12.9716;
+    final longitude = (ctx.input['lng'] as num?)?.toDouble() ?? 77.5946;
+    print('📍 GPS Update: ($latitude, $longitude)');
+    // Simulates GPS location broadcast
+    await Future.delayed(Duration(milliseconds: 500));
+    return TaskResult.success(data: {
+      'lat': latitude,
+      'lng': longitude,
+      'timestamp': DateTime.now().toString(),
+    });
+  });
+
+  // Mode 3: Expedited Task - Process payment immediately
+  TaskFlow.registerHandler('processPayment', (ctx) async {
+    final amount = ctx.input['amount'] as num? ?? 250.0;
+    print('💳 Processing payment: ₹$amount...');
+    await Future.delayed(Duration(seconds: 1));
+    await ctx.reportProgress(0.5);
+    print('💳 Verifying with payment gateway...');
+    await Future.delayed(Duration(seconds: 1));
+    await ctx.reportProgress(1.0);
+    return TaskResult.success(data: {
+      'transactionId': 'TXN_${DateTime.now().millisecondsSinceEpoch}',
+      'amount': amount,
+      'status': 'completed',
+    });
+  });
+
+  // Legacy example tasks
   TaskFlow.registerHandler('exampleTask', (ctx) async {
     await Future.delayed(Duration(seconds: 1));
     await ctx.reportProgress(0.5);
@@ -59,7 +106,7 @@ class _ExampleHomeState extends State<ExampleHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('TaskFlow Example')),
+      appBar: AppBar(title: const Text('TaskFlow: Ride-Hailing Example')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -68,10 +115,86 @@ class _ExampleHomeState extends State<ExampleHome> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text(
-                  'TaskFlow Background Task Orchestrator',
+                  '🚗 Ola/Uber Style Ride-Hailing',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Three execution modes in one app',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
                 const SizedBox(height: 24),
+                // ===== MODE 1: Deferrable Task =====
+                const Text(
+                  '1️⃣ Deferrable Task (Sync History)',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                _buildButton(
+                  'End Ride → Sync History',
+                  () async {
+                    final id = await TaskFlow.enqueue(
+                      'syncRideHistory',
+                      input: {'rideId': 'ride_${DateTime.now().millisecondsSinceEpoch}'},
+                      constraints: TaskConstraints(
+                        network: NetworkConstraint.connected,
+                      ),
+                      retry: RetryPolicy.exponential(
+                        maxAttempts: 3,
+                        initialDelay: Duration(seconds: 5),
+                      ),
+                    );
+                    setState(() => _executionId = id);
+                    _monitorTask(id);
+                  },
+                ),
+                const SizedBox(height: 16),
+                // ===== MODE 2: Persistent Service =====
+                const Text(
+                  '2️⃣ Persistent Service (GPS Tracking)',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                _buildButton(
+                  'Start Live Tracking (Foreground)',
+                  () async {
+                    // Note: In real app, this would start a foreground service
+                    final id = await TaskFlow.enqueue(
+                      'updateLocation',
+                      input: {'lat': 12.9716, 'lng': 77.5946},
+                    );
+                    setState(() => _executionId = id);
+                    _monitorTask(id);
+                  },
+                ),
+                const SizedBox(height: 16),
+                // ===== MODE 3: Expedited Task =====
+                const Text(
+                  '3️⃣ Expedited Task (Payment)',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                _buildButton(
+                  'Process Payment (ASAP)',
+                  () async {
+                    final id = await TaskFlow.enqueue(
+                      'processPayment',
+                      priority: TaskPriority.high,
+                      input: {'amount': 250.50},
+                    );
+                    setState(() => _executionId = id);
+                    _monitorTask(id);
+                  },
+                ),
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 16),
+                // ===== Legacy Examples =====
+                const Text(
+                  'Legacy Examples',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
                 _buildButton(
                   'Enqueue Task',
                   () async {
@@ -160,6 +283,7 @@ class _ExampleHomeState extends State<ExampleHome> {
                   ),
                 ],
                 const SizedBox(height: 24),
+                const SizedBox(height: 24),
                 const Divider(),
                 const SizedBox(height: 16),
                 const Text(
@@ -168,12 +292,14 @@ class _ExampleHomeState extends State<ExampleHome> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  '• Enqueue one-off tasks\n'
-                  '• Monitor task progress in real-time\n'
-                  '• Automatic retry with exponential/linear backoff\n'
-                  '• Pass input data to tasks\n'
-                  '• Report progress from handlers\n'
-                  '• Track task status via streams\n',
+                  '✅ Three execution modes (Deferrable, Persistent, Expedited)\n'
+                  '✅ Monitor task progress in real-time\n'
+                  '✅ Automatic retry with exponential/linear backoff\n'
+                  '✅ Pass input data to tasks\n'
+                  '✅ Report progress from handlers\n'
+                  '✅ Track task status via streams\n'
+                  '✅ Task constraints (network, battery, charging)\n'
+                  '✅ Task priorities (high, normal, low)\n',
                   style: TextStyle(fontSize: 12),
                 ),
               ],
