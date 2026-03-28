@@ -1,3 +1,11 @@
+## 1.0.3
+
+* Add task chaining example demonstrating sequential task execution.
+* Add periodic scheduling example (15+ minute intervals).
+* Enhance example app with task result display and real-time activity logging.
+* Show transaction IDs, GPS coordinates, and sync data for each execution mode.
+* Demonstrate all five execution patterns: enqueue, chain, schedule, persistent, expedited.
+
 ## 1.0.2
 
 * Fix pubspec.yaml description length (max 180 chars for pub.dev display).

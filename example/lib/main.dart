@@ -442,10 +442,9 @@ class _ExampleHomeState extends State<ExampleHome> {
 
   void _enqueueChain() async {
     _logActivity('[CHAIN] Starting sequential task chain...');
-    // Chain: validatePayment → processPayment → sendConfirmation
+    // Chain: validatePayment → sendConfirmation
     final id = await TaskFlow.chain('paymentChain')
         .then('validatePayment')
-        .then('processPayment')
         .then('sendConfirmation')
         .enqueue(input: {'amount': 500.00});
     _logActivity('[CHAIN] Chain enqueued: $id');
