@@ -1,3 +1,8 @@
+## 1.0.1
+
+* Fix test import warnings by updating to use bg_orchestrator package name.
+* Add proper MIT license text.
+
 ## 1.0.0
 
 * Initial release.

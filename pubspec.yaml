@@ -1,6 +1,6 @@
 name: bg_orchestrator
 description: "A production-grade, cross-platform background task orchestrator for Flutter. Unifies Android WorkManager and iOS BGTaskScheduler with a single elegant Dart API. Supports task chaining, typed retry policies, progress reporting, and reactive monitoring."
-version: 1.0.0
+version: 1.0.1
 homepage: https://github.com/ramprasad090/taskflow
 repository: https://github.com/ramprasad090/taskflow
 issue_tracker: https://github.com/ramprasad090/taskflow/issues
