@@ -68,7 +68,43 @@ public class TaskFlowPlugin: NSObject, FlutterPlugin {
   }
 
   private func handleEnqueue(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
-    result("dummy-exec-id")
+    let executionId = "exec-\(Date().timeIntervalSince1970)-\(Int.random(in: 0...999))"
+    result(executionId)
+
+    // Simulate task execution with status updates
+    simulateTaskExecution(executionId)
+  }
+
+  private func simulateTaskExecution(_ executionId: String) {
+    DispatchQueue.global().asyncAfter(deadline: .now() + 0.1) {
+      // Emit Queued status
+      TaskFlowPlugin.eventSink?([
+        "executionId": executionId,
+        "status": "TaskQueued"
+      ])
+
+      DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
+        // Emit Running status with progress
+        for i in 1...5 {
+          DispatchQueue.global().asyncAfter(deadline: .now() + Double(i - 1) * 0.4) {
+            TaskFlowPlugin.eventSink?([
+              "executionId": executionId,
+              "status": "TaskRunning",
+              "progress": Double(i) * 0.2
+            ])
+          }
+        }
+
+        // Emit Succeeded status
+        DispatchQueue.global().asyncAfter(deadline: .now() + 2.0) {
+          TaskFlowPlugin.eventSink?([
+            "executionId": executionId,
+            "status": "TaskSucceeded",
+            "output": ["result": "Task completed successfully!"]
+          ])
+        }
+      }
+    }
   }
 
   private func handleEnqueueChain(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {

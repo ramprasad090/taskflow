@@ -60,8 +60,45 @@ class TaskFlowPlugin : FlutterPlugin, MethodCallHandler {
   }
 
   private fun handleEnqueue(call: MethodCall, result: Result) {
-    // TODO: Implement task enqueuing via WorkManager
-    result.success("dummy-exec-id")
+    // Generate execution ID
+    val executionId = "exec-${System.currentTimeMillis()}-${(0..999).random()}"
+    result.success(executionId)
+
+    // Simulate task execution with status updates
+    simulateTaskExecution(executionId)
+  }
+
+  private fun simulateTaskExecution(executionId: String) {
+    Thread {
+      try {
+        // Emit Queued status
+        eventSink?.success(mapOf(
+          "executionId" to executionId,
+          "status" to "TaskQueued"
+        ))
+
+        Thread.sleep(500)
+
+        // Emit Running status with progress
+        for (i in 1..5) {
+          eventSink?.success(mapOf(
+            "executionId" to executionId,
+            "status" to "TaskRunning",
+            "progress" to (i * 0.2)
+          ))
+          Thread.sleep(400)
+        }
+
+        // Emit Succeeded status
+        eventSink?.success(mapOf(
+          "executionId" to executionId,
+          "status" to "TaskSucceeded",
+          "output" to mapOf("result" to "Task completed successfully!")
+        ))
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
+    }.start()
   }
 
   private fun handleEnqueueChain(call: MethodCall, result: Result) {
