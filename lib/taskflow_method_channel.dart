@@ -15,7 +15,12 @@ class MethodChannelTaskFlow extends TaskFlowPlatform {
 
   late final Stream<Map<String, dynamic>> _events =
       eventChannel.receiveBroadcastStream().map((dynamic event) {
-    return Map<String, dynamic>.from(event as Map);
+    if (event is Map) {
+      return Map<String, dynamic>.from(
+        event.cast<String, dynamic>(),
+      );
+    }
+    return <String, dynamic>{};
   }).asBroadcastStream();
 
   @override
